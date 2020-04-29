@@ -99,7 +99,7 @@ const getAverageAngle = (i, angles, spread = 20) => {
     if (arrI > angles.length) arrI -= angles.length;
     return a + angles[arrI] / spread;
   }, 0);
-}
+};
 
 export const racingLine = (scene) => {
   // const centerLine = trackParams.centerLine;
@@ -118,7 +118,7 @@ export const racingLine = (scene) => {
     new THREE.Vector3(-10, 0, -30),
     new THREE.Vector3(-10, 0, -50),
 
-    new THREE.Vector3(0,0,-70),
+    new THREE.Vector3(0, 0, -70),
     // new THREE.Vector3(0, 0, -40),
     // new THREE.Vector3(10, 0, -80),
 
@@ -137,8 +137,10 @@ export const racingLine = (scene) => {
   });
 
   console.log({ matrix });
+  const t0 = performance.now();
   const path = Dijkstra(matrix);
-  
+  const t1 = performance.now();
+  console.info(`Dijkstra took ${t1 - t0} ms with ${wpCount * cpCount} points`);
 
   // const segmentValue = (pMinus1, p, pPlus1) => {
   //   const alpha = 0.01;
@@ -298,9 +300,9 @@ class Graph {
     this.adjacencyList[node] = [];
   }
 
-  addEdge(node1, node2, weight) {
+  addEdge(node1, node2, weight) { // backwards edge not required
     this.adjacencyList[node1].push({ node: node2, weight });
-    //this.adjacencyList[node2].push({ node: node1, weight });
+    // this.adjacencyList[node2].push({ node: node1, weight });
   }
 
   findPathWithDijkstra(startNode, endNode) {

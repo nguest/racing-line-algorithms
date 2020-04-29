@@ -1,10 +1,13 @@
-# threejs-react-boilerplate
+# racing-line-algorithms
 
-A boilerplate for a three.js app with react bindings.
+Investigate possible solutions to find shortest/fastest racing line of a procedurally-generated racetrack in 3D
 
-In the project directory, you run:
+* Dijkstra's shortest path algorithm without backwards tracing
 
-### `yarn startdev`
+In the project directory, run:
 
-Runs the app in the development mode.<br />
+`yarn startdev`
+
+Runs the app in the development mode.
+
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
