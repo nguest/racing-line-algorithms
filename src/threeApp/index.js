@@ -157,7 +157,7 @@ export class Main extends PureComponent {
   createWorld(materials, assets) {
     this.createObjects(materials);
 
-    racingLine(this.scene);
+    racingLine(this.scene, this.camera);
 
     // calculate global envmap and skybox
     createSkyBoxFrom4x3({
