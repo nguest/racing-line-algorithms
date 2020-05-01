@@ -27,7 +27,9 @@ import { lightsIndex } from './sceneConfig/lights';
 
 // Objects
 import { objectsIndex } from './sceneConfig/objects';
+import { computeTrackParams } from './custom/geometries/trackParams';
 import { racingLine } from './custom/geometries/racingLine';
+import { createApexes } from './custom/geometries/apex';
 
 // Managers
 import { Interaction } from './managers/Interaction';
@@ -58,6 +60,7 @@ export class Main extends PureComponent {
     this.manager.onProgress = (url, itemsLoaded, itemsTotal) => {
       this.showStatus(`Loading file: ${itemsLoaded} of ${itemsTotal} files.`);
     };
+    this.trackParams = computeTrackParams()
 
     if (Config.showStats) {
       this.stats = new Stats();
@@ -157,7 +160,8 @@ export class Main extends PureComponent {
   createWorld(materials, assets) {
     this.createObjects(materials);
 
-    racingLine(this.scene, this.camera);
+    racingLine(this.scene, this.camera, this.trackParams);
+    createApexes(this.scene, this.trackParams);
 
     // calculate global envmap and skybox
     createSkyBoxFrom4x3({
