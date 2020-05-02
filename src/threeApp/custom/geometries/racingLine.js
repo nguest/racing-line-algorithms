@@ -14,6 +14,12 @@ export const racingLineCrossSection = () => (new THREE.Shape([
   new THREE.Vector2(-0, -1),
 ]));
 
+const mat = {
+  red: new THREE.LineBasicMaterial({ color: 0xff0000 }),
+  pink: new THREE.LineBasicMaterial({ color: 0xff5555 }),
+  green: new THREE.LineBasicMaterial({ color: 0x55ff55 }),
+  yellow: new THREE.LineBasicMaterial({ color: 0xffff77 }),
+};
 
 const getAverageAngle = (i, angles, spread = 20) => {
   angles[i] + angles[i + 1]
@@ -71,21 +77,17 @@ export const racingLine = (scene, camera, trackParams) => {
 
   //recursePath(matrix, cpCount, wpCount);
   const t2 = performance.now();
-  const splinePoints = splineMethod(cpPoints, binormals, tangents, trackParams.trackHalfWidth);
+  const { racingLineSpline, edgeTouches } = splineMethod(cpPoints, binormals, tangents, trackParams.trackHalfWidth);
   const t3 = performance.now();
   console.info(`SplineMethod took ${t3 - t2} ms with ${cpCount} nodes`);
 
   // line materials
-  const redMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
-  const pinkMat = new THREE.LineBasicMaterial({ color: 0xff5555 });
-  const greenMat = new THREE.LineBasicMaterial({ color: 0x55ff55 });
-  const yellowMat = new THREE.LineBasicMaterial({ color: 0xffff00 });
 
   // add line objects
 
   // render centerline
   const cpGeometry = new THREE.BufferGeometry().setFromPoints(cpPoints);
-  const cpLineObj = new THREE.Line(cpGeometry, redMat);
+  const cpLineObj = new THREE.Line(cpGeometry, mat.red);
 
   cpGeometry.computeBoundingSphere();
   const c = cpLineObj.geometry.boundingSphere;
@@ -99,11 +101,11 @@ export const racingLine = (scene, camera, trackParams) => {
 
   const olPointsL = cpPoints.map((cp, i) => cp.clone().sub(binormals[i].clone().multiplyScalar(s)));
   const olGeometryL = new THREE.BufferGeometry().setFromPoints(olPointsL);
-  const olObjL = new THREE.Line(olGeometryL, redMat);
+  const olObjL = new THREE.Line(olGeometryL, mat.red);
   scene.add(olObjL);
   const olPointsR = cpPoints.map((cp, i) => cp.clone().sub(binormals[i].clone().multiplyScalar(-s)));
   const olGeometryR = new THREE.BufferGeometry().setFromPoints(olPointsR);
-  const olObjR = new THREE.Line(olGeometryR, redMat);
+  const olObjR = new THREE.Line(olGeometryR, mat.red);
   scene.add(olObjR);
 
   const segments = cpPoints.map((cp, i) => ([
@@ -112,7 +114,7 @@ export const racingLine = (scene, camera, trackParams) => {
   ]));
   segments.forEach((segment) => {
     const geometry = new THREE.BufferGeometry().setFromPoints([...segment]);
-    const slObj = new THREE.Line(geometry, pinkMat);
+    const slObj = new THREE.Line(geometry, mat.pink);
     scene.add(slObj);
   });
 
@@ -121,7 +123,7 @@ export const racingLine = (scene, camera, trackParams) => {
   ]));
   segments2.forEach((segment) => {
     const geometry = new THREE.BufferGeometry().setFromPoints([...segment]);
-    const slObj = new THREE.Line(geometry, greenMat);
+    const slObj = new THREE.Line(geometry, mat.green);
     scene.add(slObj);
   });
 
@@ -133,14 +135,16 @@ export const racingLine = (scene, camera, trackParams) => {
       const p1 = matrix[node[0]][node[1]];
       const p2 = matrix[nodes[idx + 1][0]][nodes[idx + 1][1]];
       const geometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-      const rlObj = new THREE.Line(geometry, greenMat);
+      const rlObj = new THREE.Line(geometry, mat.green);
       scene.add(rlObj);
     }
   });
 
-  splinePoints.forEach((p, i) => {
-    const geometry = new THREE.BufferGeometry().setFromPoints([p, splinePoints[(i + 1) % splinePoints.length]]);
-    const rlObj = new THREE.Line(geometry, yellowMat);
-    scene.add(rlObj);
-  });
+  // render spline path
+  const splinePoints = racingLineSpline.reduce((out, p, i) => (
+    [...out, racingLineSpline[(i + 1) % racingLineSpline.length]]
+  ), []);
+  const geometry = new THREE.BufferGeometry().setFromPoints(splinePoints);
+  const splineObj = new THREE.Line(geometry, mat.yellow);
+  scene.add(splineObj);
 };
