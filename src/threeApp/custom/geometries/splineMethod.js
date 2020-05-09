@@ -8,8 +8,8 @@ export const splineMethod = (cpPoints, binormals, tangents, trackHalfWidth) => {
   const edgeTouches = {};
   const tolerance = 0.5;
 
-  const alpha = 7; // shortest
-  const beta = 0.3; // curvature
+  const alpha = 6; // shortest
+  const beta = 0.2; // curvature
 
   for (let i = 0; i < nIterations; i++) {
     for (let j = 0; j < racingLineSpline.length; j++) {
@@ -37,11 +37,17 @@ export const splineMethod = (cpPoints, binormals, tangents, trackHalfWidth) => {
       // Curvature
       displacement[(j + 1) % racingLineSpline.length] += dotProduct * -beta;
       displacement[(j - 1 + racingLineSpline.length) % racingLineSpline.length] += dotProduct * -beta;
+
+      // create weights of points as they approach edge
       if (
         (displacement[j] > trackHalfWidth - tolerance
         || displacement[j] < -trackHalfWidth + tolerance)
-        && !Object.keys(edgeTouches).includes(j)) {
-        edgeTouches[j] = { idx: j, side: Math.sign(displacement[j]) };
+      ) {
+        if (!Object.prototype.hasOwnProperty.call(edgeTouches, j)) {
+          edgeTouches[j] = { idx: j, dir: Math.sign(displacement[j]), weight: 1 };
+        } else {
+          edgeTouches[j].weight++;
+        }
       }
     }
 
@@ -51,11 +57,45 @@ export const splineMethod = (cpPoints, binormals, tangents, trackHalfWidth) => {
       if (displacement[j] <= -trackHalfWidth) displacement[j] = -trackHalfWidth;
 
       racingLineSpline[j] = cpPoints[j].clone().add(binormals[j].clone().multiplyScalar(displacement[j]));
-      if (j === 20) console.log({ a: displacement[j], b: racingLineSpline[j] });
     }
   }
 
-  console.log({ displacement, racingLineSpline, edgeTouches });
-  return { racingLineSpline, edgeTouches };
+  const apexes = edgeTouchesFilter(edgeTouches);
+  console.log({ displacement, racingLineSpline, edgeTouches, apexes });
+  return { racingLineSpline, edgeTouches, apexes };
 
 }
+
+// create simple array of best edgeTouches
+const edgeTouchesFilter = (et) => {
+  const arr = Object.values(et);
+  const grouped = arr.reduce((apexes, curr, i) => {
+    if (
+      arr[i - 1]
+      && curr.idx !== arr[i - 1].idx + 1
+    ) {
+      return [...apexes, [curr]]; // return if next touch is not adjacent
+    }
+    if (
+      apexes[apexes.length - 1]
+      && apexes[apexes.length - 1].map((a) => a.idx).includes(curr.idx - 1)
+      && apexes[apexes.length - 1][0].dir === curr.dir
+    ) {
+      // push this edgeTouch to current group
+      apexes[apexes.length - 1].push(curr);
+      return [...apexes];
+    }
+    return apexes;
+  }, []);
+
+  // filter arrays to "best" apex point
+  const filtered = grouped.map((group) => (
+    group.reduce((best, curr) => {
+      if (curr.weight > best.weight) {
+        return curr;
+      }
+      return best;
+    })
+  ));
+  return filtered;
+};

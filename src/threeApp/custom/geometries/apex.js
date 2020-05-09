@@ -40,7 +40,7 @@ export const createApexes = (scene, trackParams) => {
     const sphere = new THREE.Mesh(geometry, material);
     const apexMarkerPosn = apex.p.sub(apex.binormal.clone().multiplyScalar(trackParams.trackHalfWidth * apex.dir));
     sphere.position.set(apexMarkerPosn.x, apexMarkerPosn.y + 1, apexMarkerPosn.z);
-    scene.add(sphere);
+    //scene.add(sphere);
   });
   
   return apexes;

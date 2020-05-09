@@ -14,6 +14,7 @@ export const racingLineCrossSection = () => (new THREE.Shape([
   new THREE.Vector2(-0, -1),
 ]));
 
+// line materials
 const mat = {
   red: new THREE.LineBasicMaterial({ color: 0xff0000 }),
   pink: new THREE.LineBasicMaterial({ color: 0xff5555 }),
@@ -21,29 +22,28 @@ const mat = {
   yellow: new THREE.LineBasicMaterial({ color: 0xffff77 }),
 };
 
-const getAverageAngle = (i, angles, spread = 20) => {
-  angles[i] + angles[i + 1]
+// const getAverageAngle = (i, angles, spread = 20) => {
+//   angles[i] + angles[i + 1]
 
-  return new Array(spread).fill(0).reduce((a, c, idx) => {
-    let arrI = i + idx - spread;
-    if (arrI < 0) arrI += angles.length;
-    if (arrI > angles.length) arrI -= angles.length;
-    return a + angles[arrI] / spread;
-  }, 0);
-};
+//   return new Array(spread).fill(0).reduce((a, c, idx) => {
+//     let arrI = i + idx - spread;
+//     if (arrI < 0) arrI += angles.length;
+//     if (arrI > angles.length) arrI -= angles.length;
+//     return a + angles[arrI] / spread;
+//   }, 0);
+// };
 
 export const racingLine = (scene, camera, trackParams) => {
-  const b = converLatLngToVector(coordinates);
+  // const b = converLatLngToVector(coordinates);
   const centerLine = trackParams.centerLine;
-
+  console.log({ l: centerLine.getLength() });
+  
   const wpCount = 7; // width section pointscount
-  const cpCount = 300; // segments in track direction
+  const cpCount = Math.floor(centerLine.getLength() / 15); // segments in track direction
   const trackHalfWidth = 5;
   const steps = 10; // trackParams.steps;
   const { binormals, tangents } = computeFrenetFrames(centerLine, cpCount);
   const cpPoints = getSpacedPoints(centerLine, cpCount);
-
-
 
   // const test = [
   //   new THREE.Vector3(0, 0, 10),
@@ -68,20 +68,17 @@ export const racingLine = (scene, camera, trackParams) => {
     });
   });
 
-  console.log({ matrix });
   const t0 = performance.now();
   const nodes = dijkstraMethod(matrix, binormals, 0, cpCount - 1);
   const t1 = performance.now();
   console.info(`Dijkstra took ${t1 - t0} ms with ${wpCount * cpCount} points`);
 
 
-  //recursePath(matrix, cpCount, wpCount);
+  // recursePath(matrix, cpCount, wpCount);
   const t2 = performance.now();
-  const { racingLineSpline, edgeTouches } = splineMethod(cpPoints, binormals, tangents, trackParams.trackHalfWidth);
+  const { racingLineSpline, edgeTouches, apexes } = splineMethod(cpPoints, binormals, tangents, trackParams.trackHalfWidth);
   const t3 = performance.now();
   console.info(`SplineMethod took ${t3 - t2} ms with ${cpCount} nodes`);
-
-  // line materials
 
   // add line objects
 
@@ -147,4 +144,22 @@ export const racingLine = (scene, camera, trackParams) => {
   const geometry = new THREE.BufferGeometry().setFromPoints(splinePoints);
   const splineObj = new THREE.Line(geometry, mat.yellow);
   scene.add(splineObj);
+
+  // render edgeTouches
+  Object.keys(edgeTouches).forEach((k) => {
+    const apex = edgeTouches[k];
+    const sphereGeo = new THREE.SphereBufferGeometry(2, 10, 5);
+    const sphere = new THREE.Mesh(sphereGeo, mat.yellow);
+    const apexMarkerPosn = cpPoints[apex.idx].clone().add(binormals[apex.idx].clone().multiplyScalar(trackParams.trackHalfWidth * apex.dir));
+    sphere.position.set(apexMarkerPosn.x, apexMarkerPosn.y, apexMarkerPosn.z);
+    scene.add(sphere);
+  });
+
+  apexes.forEach((apex) => {
+    const sphereGeo = new THREE.SphereBufferGeometry(2.5, 10, 5);
+    const sphere = new THREE.Mesh(sphereGeo, mat.red);
+    const apexMarkerPosn = cpPoints[apex.idx].clone().add(binormals[apex.idx].clone().multiplyScalar(trackParams.trackHalfWidth * apex.dir));    
+    sphere.position.set(apexMarkerPosn.x, apexMarkerPosn.y, apexMarkerPosn.z);
+    scene.add(sphere);
+  });
 };
